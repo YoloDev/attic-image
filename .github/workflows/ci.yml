@@ -29,3 +29,6 @@ jobs:
 
       - name: Check flake
         run: nix flake check
+
+      - name: Build images
+        run: nix run path:.#build-images

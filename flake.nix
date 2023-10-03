@@ -96,29 +96,50 @@
 
           imagesFlat = builtins.concatLists imagesPerArch;
           imagesByName = builtins.groupBy (image: image.imgMeta.name) imagesFlat;
-          loadImg = image:
+
+          pushImg = image:
             ''
-              IMG=$(podman load -i "${image}" 2>/dev/null | ${pkgs.coreutils}/bin/cut -c 25-)
+              IMG=$(${pkgs.podman}/bin/podman load -i "${image}" 2>/dev/null | ${pkgs.coreutils}/bin/cut -c 25-)
               echo "Loaded ${image.imgMeta.name} as localhost/$IMG"
-              podman push "localhost/$IMG" "docker.io/alxandr/$IMG"
+              ${pkgs.podman}/bin/podman push "localhost/$IMG" "docker.io/alxandr/$IMG"
             '';
-          loadImgs = images: builtins.concatStringsSep "\n" (builtins.map loadImg images);
+          pushImgs = images: builtins.concatStringsSep "\n" (builtins.map pushImg images);
+
+          buildImg = image:
+            ''
+              echo "Image ${image.imgMeta.name} is built at ${image}"
+            '';
+          buildImgs = images: builtins.concatStringsSep "\n" (builtins.map buildImg images);
+
           imagesPkgs = lib.mapAttrs
             (name: images: pkgs.writeShellApplication {
               inherit name;
-              text = loadImgs images;
+              text = pushImgs images;
             })
             imagesByName;
-          allPkgs = {
-            all-images = pkgs.writeShellApplication {
-              name = "all-images";
-              text = loadImgs imagesFlat;
+
+          appPkgs = {
+            push-images = pkgs.writeShellApplication {
+              name = "push-images";
+              text = pushImgs imagesFlat;
+            };
+            build-images = pkgs.writeShellApplication {
+              name = "build-images";
+              text = buildImgs imagesFlat;
             };
             attic = pkgs.attic;
           };
+
+          apps = lib.mapAttrs
+            (name: pkg: {
+              type = "app";
+              program = "${pkg}/bin/${pkg.name}";
+            })
+            appPkgs;
         in
         {
-          packages = imagesPkgs // allPkgs;
+          packages = imagesPkgs;
+          apps = apps;
         };
     });
 }
