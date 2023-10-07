@@ -14,6 +14,7 @@ jobs:
     needs: []
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v1
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v5
@@ -25,10 +26,10 @@ jobs:
         uses: DeterminateSystems/flake-checker-action@main
 
       - name: Show flake
-        run: nix flake show
+        run: nix --accept-flake-config flake show
 
       - name: Check flake
-        run: nix flake check
+        run: nix --accept-flake-config flake check
 
-      - name: Build images
-        run: nix run path:.#build-images
+      - name: Build aarch64 image
+        run: nix --accept-flake-config build .#packages.aarch64-linux.attic

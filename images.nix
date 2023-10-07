@@ -1,10 +1,10 @@
 { pkgs, arch, ... }:
 let
   mkAtticdImage = name: mode:
-    let img = pkgs.dockerTools.buildLayeredImage
+    let img = pkgs.dockerTools.streamLayeredImage
       {
         name = "${name}";
-        tag = "v${pkgs.attic-server.version}-${arch}";
+        tag = "v${pkgs.attic-server.version}";
 
         contents = [ pkgs.busybox ];
 
@@ -26,8 +26,10 @@ let
 
 in
 {
-  attic-server = mkAtticdImage "attic-server" "api-server";
-  attic-gc = mkAtticdImage "attic-gc" "garbage-collector-once";
-  attic-db-migrations = mkAtticdImage "attic-db-migrations" "db-migrations";
-  attic-check-config = mkAtticdImage "attic-check-config" "check-config";
+  images = {
+    attic-server = mkAtticdImage "attic-server" "api-server";
+    attic-gc = mkAtticdImage "attic-gc" "garbage-collector-once";
+    attic-db-migrations = mkAtticdImage "attic-db-migrations" "db-migrations";
+    attic-check-config = mkAtticdImage "attic-check-config" "check-config";
+  };
 }

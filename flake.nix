@@ -39,22 +39,28 @@
 
   outputs =
     inputs@{ attic, nixpkgs, flake-parts, ... }:
-    flake-parts.lib.mkFlake { inherit inputs; } ({ lib, flake-parts-lib, ... }: {
+    flake-parts.lib.mkFlake { inherit inputs; } ({ lib, flake-parts-lib, config, ... }:
+    {
       imports = [
-        (flake-parts-lib.mkTransposedPerSystemModule {
-          name = "foo";
-          file = ./flake.nix;
-          option = lib.mkOption {
-            type = lib.types.lazyAttrsOf lib.types.raw;
-            default = { };
-          };
-        })
+        ./flake-parts/images.nix
+        # this is convenient for debugging
+        # (flake-parts-lib.mkTransposedPerSystemModule {
+        #   name = "foo";
+        #   file = ./flake.nix;
+        #   option = lib.mkOption {
+        #     type = lib.types.lazyAttrsOf lib.types.raw;
+        #     default = { };
+        #   };
+        # })
       ];
+
+      flake._config = config;
 
       systems = [
         "x86_64-linux"
-        # "aarch64-linux"
+        "aarch64-linux"
       ];
+
 
       perSystem = { system, ... }:
         let
@@ -63,83 +69,32 @@
             overlays = [ attic.overlays.default ];
           };
 
-          mkSystem = arch: native:
-            let
-              pkgs = (import inputs.nixpkgs {
-                inherit system;
-                overlays = [ attic.overlays.default ];
-                # crossSystem = { config = "${arch}-unknown-linux-gnu"; };
-              }).pkgs;
-            in
-            {
-              inherit arch pkgs;
-              system = native;
-            };
-
-          crossSystems =
-            [
-              (mkSystem "x86_64" "x86_64-linux")
-              # (mkSystem "aarch64" "aarch64-linux")
-            ];
-
-          imagesPerArch = builtins.map
-            (sys:
-              let
-                imagesSet = import ./images.nix {
-                  inherit (sys) arch pkgs;
-                };
-                imagesNames = builtins.attrNames imagesSet;
-                images = builtins.map (name: imagesSet.${name}) imagesNames;
-              in
-              images)
-            crossSystems;
-
-          imagesFlat = builtins.concatLists imagesPerArch;
-          imagesByName = builtins.groupBy (image: image.imgMeta.name) imagesFlat;
-
-          pushImg = image:
-            ''
-              IMG=$(${pkgs.podman}/bin/podman load -i "${image}" 2>/dev/null | ${pkgs.coreutils}/bin/cut -c 25-)
-              echo "Loaded ${image.imgMeta.name} as localhost/$IMG"
-              ${pkgs.podman}/bin/podman push "localhost/$IMG" "docker.io/alxandr/$IMG"
-            '';
-          pushImgs = images: builtins.concatStringsSep "\n" (builtins.map pushImg images);
-
-          buildImg = image:
-            ''
-              echo "Image ${image.imgMeta.name} is built at ${image}"
-            '';
-          buildImgs = images: builtins.concatStringsSep "\n" (builtins.map buildImg images);
-
-          imagesPkgs = lib.mapAttrs
-            (name: images: pkgs.writeShellApplication {
-              inherit name;
-              text = pushImgs images;
-            })
-            imagesByName;
-
-          appPkgs = {
-            push-images = pkgs.writeShellApplication {
-              name = "push-images";
-              text = pushImgs imagesFlat;
-            };
-            build-images = pkgs.writeShellApplication {
-              name = "build-images";
-              text = buildImgs imagesFlat;
-            };
+          packages = {
             attic = pkgs.attic;
           };
 
           apps = lib.mapAttrs
             (name: pkg: {
               type = "app";
-              program = "${pkg}/bin/${pkg.name}";
+              program = "${pkg}/bin/${pkg.pname or pkg.name}";
             })
-            appPkgs;
+            packages;
         in
         {
-          packages = imagesPkgs;
-          apps = apps;
+          imports = [
+            ./images.nix
+          ];
+
+          _module.args.pkgs = pkgs;
+
+          inherit packages apps;
+
+          devShells.default = pkgs.mkShell {
+            buildInputs = with pkgs; [
+              attic-client
+              git
+            ];
+          };
         };
     });
 }
