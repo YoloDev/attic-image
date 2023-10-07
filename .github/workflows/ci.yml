@@ -14,7 +14,7 @@ jobs:
     needs: []
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v1
+      - uses: docker/setup-qemu-action@v3
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v5
