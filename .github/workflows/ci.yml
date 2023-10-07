@@ -14,13 +14,20 @@ jobs:
     needs: []
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v1
+      - uses: docker/setup-qemu-action@v3
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v5
 
-      - name: Setup Nix cache
+      - name: Setup Nix cache (GHA)
         uses: DeterminateSystems/magic-nix-cache-action@v2
+
+      - name: Setup Nix cache (attic)
+        uses: YoloDev/actions-attic@main
+        with:
+          server: https://attic.alxandr.me
+          cache: yolodev-attic-image
+          token: ${{ secrets.ATTIC_TOKEN }}
 
       - name: Check Nix flake Nixpkgs inputs
         uses: DeterminateSystems/flake-checker-action@main
@@ -32,4 +39,4 @@ jobs:
         run: nix --accept-flake-config flake check
 
       - name: Build aarch64 image
-        run: nix --accept-flake-config build .#packages.aarch64-linux.attic
+        run: nix --accept-flake-config --extra-platforms aarch64-linux build .#packages.aarch64-linux.attic
