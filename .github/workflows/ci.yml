@@ -22,7 +22,8 @@ jobs:
       - name: Setup Nix cache (GHA)
         uses: DeterminateSystems/magic-nix-cache-action@v2
 
-      - name: Setup Nix cache (attic)
+      - id: cache-attic
+        name: Setup Nix cache (attic)
         uses: YoloDev/actions-attic@main
         with:
           server: https://attic.alxandr.me
@@ -39,4 +40,7 @@ jobs:
         run: nix --accept-flake-config flake check
 
       - name: Build aarch64 image
-        run: nix --accept-flake-config --extra-platforms aarch64-linux build .#packages.aarch64-linux.attic
+        run: nix --accept-flake-config --extra-platforms aarch64-linux build .#attic-server
+
+      - name: Push to attic
+        run: attic push "${{ steps.cache-attic.outputs.cache }}" ./result

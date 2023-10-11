@@ -26,13 +26,12 @@
     # we'll use for our configurations. Be very careful changing this because
     # it'll impact your entire system.
     nixpkgs.url = "github:nixos/nixpkgs/nixos-23.05";
-    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
 
     flake-parts.url = "github:hercules-ci/flake-parts";
 
     attic = {
       url = "github:zhaofengli/attic";
-      inputs.nixpkgs.follows = "nixpkgs-unstable";
+      inputs.nixpkgs.follows = "nixpkgs";
       inputs.nixpkgs-stable.follows = "nixpkgs";
     };
   };
@@ -43,6 +42,7 @@
     {
       imports = [
         ./flake-parts/images.nix
+        ./images.nix
         # this is convenient for debugging
         # (flake-parts-lib.mkTransposedPerSystemModule {
         #   name = "foo";
@@ -81,9 +81,7 @@
             packages;
         in
         {
-          imports = [
-            ./images.nix
-          ];
+
 
           _module.args.pkgs = pkgs;
 
