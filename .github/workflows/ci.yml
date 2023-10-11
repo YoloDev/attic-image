@@ -39,7 +39,7 @@ jobs:
       - name: Check flake
         run: nix --accept-flake-config flake check
 
-      - name: Build aarch64 image
+      - name: Build attic-server
         run: nix --accept-flake-config --extra-platforms aarch64-linux build .#attic-server
 
       - name: Push to attic

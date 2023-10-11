@@ -35,15 +35,22 @@ in
           writeMany = name: arches:
             let
               images = lib.attrValues arches;
-              lines = lib.concatLines (builtins.map (image: ''${image}'') images);
+              lines = lib.concatLines (builtins.map (image: ''ln -s ${image} "$out/${image.imgMeta.arch}.json"'') images);
+              image = builtins.toJSON {
+                references = builtins.map (image: image.imageRefUnsafe) images;
+              };
+              env = {
+                inherit image;
+              };
               cmd =
                 ''
-                  (
-                    ${lines}
-                  ) | ${pkgs.pigz}/bin/pigz -nTR > $out
+                  mkdir -p "$out"
+                  echo "$image" >"$out/image.json"
+
+                  ${lines}
                 '';
             in
-            pkgs.runCommand "${name}.many.tar.gz" { } cmd;
+            pkgs.runCommand "${name}" env cmd;
         in
         lib.mapAttrs writeMany images;
     };

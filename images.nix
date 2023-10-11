@@ -1,14 +1,38 @@
 {
-  perSystem = { lib, pkgs, arch, ... }:
+  perSystem = { lib, pkgs, arch, buildImage, buildLayer, ... }:
     let
+      layers = rec {
+        busybox = buildLayer {
+          deps = [ pkgs.busybox ];
+        };
+
+        tini = buildLayer {
+          deps = [ pkgs.tini ];
+
+          layers = [ busybox ];
+        };
+
+        certs = buildLayer {
+          deps = [ pkgs.cacert ];
+        };
+      };
+
       mkAtticdImage = name: mode:
         let
           tag = "v${pkgs.attic-server.version}";
-          img = pkgs.makeOverridable pkgs.dockerTools.streamLayeredImage
+          imgMeta = {
+            inherit name arch tag;
+            inherit (pkgs.attic-server) version;
+          };
+          img = pkgs.makeOverridable buildImage
             {
               inherit name tag;
 
-              contents = [ pkgs.busybox ];
+              layers = [
+                layers.busybox
+                layers.tini
+                layers.certs
+              ];
 
               config = {
                 Entrypoint = [ "${pkgs.tini}/bin/tini" ];
@@ -19,12 +43,7 @@
               };
             };
         in
-        {
-          imgMeta = {
-            inherit name arch tag;
-            inherit (pkgs.attic-server) version;
-          };
-        } // img;
+        { inherit imgMeta; } // img;
 
     in
     {

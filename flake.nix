@@ -29,6 +29,11 @@
 
     flake-parts.url = "github:hercules-ci/flake-parts";
 
+    nix2container = {
+      url = "github:nlewo/nix2container";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     attic = {
       url = "github:zhaofengli/attic";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -69,6 +74,7 @@
             overlays = [ attic.overlays.default ];
           };
 
+          nix2containerPkgs = inputs.nix2container.packages.${system};
           packages = {
             attic = pkgs.attic;
           };
@@ -81,9 +87,10 @@
             packages;
         in
         {
-
-
-          _module.args.pkgs = pkgs;
+          _module.args = {
+            inherit pkgs;
+            inherit (nix2containerPkgs.nix2container) buildImage buildLayer;
+          };
 
           inherit packages apps;
 
