@@ -19,9 +19,6 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v5
 
-      - name: Setup Nix cache (GHA)
-        uses: DeterminateSystems/magic-nix-cache-action@v2
-
       - id: cache-attic
         name: Setup Nix cache (attic)
         uses: YoloDev/actions-attic@main
