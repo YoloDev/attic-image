@@ -17,7 +17,7 @@ jobs:
       - uses: docker/setup-qemu-action@v3
 
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v5
+        uses: DeterminateSystems/nix-installer-action@v6
 
       - id: cache-attic
         name: Setup Nix cache (attic)
